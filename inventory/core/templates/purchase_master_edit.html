@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Purchase Record</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Edit Purchase Record</h2>
+        
+        <form method="POST" action="{% url 'purchase_master_edit' purchase.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Invoice No:</label>
+                <input type="text" class="form-control" value="{{ purchase.invoice_no }}" readonly>
+                <small class="text-muted">Invoice number cannot be changed</small>
+            </div>
+            <div class="mb-3">
+                <label>Invoice Date:</label>
+                <input type="date" name="invoice_date" class="form-control" value="{{ purchase.invoice_date|date:'Y-m-d' }}" required>
+            </div>
+            <div class="mb-3">
+                <label>Supplier:</label>
+                <select name="supplier" class="form-control" required>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if supplier.id == purchase.supplier.id %}selected{% endif %}>
+                        {{ supplier.supplier_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Total Amount:</label>
+                <input type="number" name="total_amount" class="form-control" value="{{ purchase.total_amount }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Purchase Record</button>
+            <a href="{% url 'purchase_master_list' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

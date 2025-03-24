@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Brand</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Edit Brand</h2>
+        
+        <form method="POST" action="{% url 'brand_edit' brand.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Brand Name:</label>
+                <input type="text" name="brand_name" class="form-control" value="{{ brand.brand_name }}" required>
+            </div>
+            <div class="mb-3">
+                <label>Status:</label>
+                <select name="status" class="form-control">
+                    <option value="True" {% if brand.status %}selected{% endif %}>Active</option>
+                    <option value="False" {% if not brand.status %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Brand</button>
+            <a href="{% url 'brand_list' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

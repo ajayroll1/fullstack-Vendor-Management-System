@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Master</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Item Master</h2>
+
+        <!-- Add Item Form -->
+        <form id="item-form">
+            <div class="mb-3">
+                <label>Item Name:</label>
+                <input type="text" name="item_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Item Code:</label>
+                <input type="text" name="item_code" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Price:</label>
+                <input type="number" name="price" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Item</button>
+        </form>
+
+        <hr>
+
+        <h3>Filter Items</h3>
+        <form id="filter-form" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" id="filter-name" class="form-control" placeholder="Item Name">
+            </div>
+            <div class="col-md-3">
+                <input type="text" id="filter-code" class="form-control" placeholder="Item Code">
+            </div>
+            <div class="col-md-3">
+                <input type="number" id="filter-price" class="form-control" placeholder="Price">
+            </div>
+            <div class="col-md-12">
+                <button type="button" id="apply-filter" class="btn btn-success">Apply Filter</button>
+                <button type="button" id="clear-filter" class="btn btn-secondary">Clear Filter</button>
+            </div>
+        </form>
+
+        <hr>
+
+        <div class="d-flex justify-content-between">
+            <h3>Item List</h3>
+            <button id="export-csv" class="btn btn-success mb-3">Export to CSV</button>
+        </div>
+
+        <!-- Items Table -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Item Name</th>
+                    <th>Item Code</th>
+                    <th>Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="item-table">
+                {% for item in items %}
+                <tr data-id="{{ item.id }}">
+                    <td>{{ item.id }}</td>
+                    <td class="item-name">{{ item.item_name }}</td>
+                    <td class="item-code">{{ item.item_code }}</td>
+                    <td class="item-price">{{ item.price }}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm edit-btn" data-id="{{ item.id }}">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="{{ item.id }}">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-item-form">
+                        <input type="hidden" id="edit-id">
+                        <div class="mb-3">
+                            <label>Item Name:</label>
+                            <input type="text" id="edit-name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Item Code:</label>
+                            <input type="text" id="edit-code" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Price:</label>
+                            <input type="number" id="edit-price" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Item</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery Script -->
+    <script>
+        var itemEditUrl = "{% url 'item_edit' 0 %}";
+        $(document).ready(function () {
+            // Add Item
+            $('#item-form').submit(function (event) {
+                event.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: "{% url 'item_create' %}",
+                    data: $(this).serialize(),
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error adding item.');
+                        }
+                    }
+                });
+            });
+
+            // Edit Item - Show Modal
+            $(".edit-btn").click(function () {
+                let row = $(this).closest("tr");
+                $("#edit-id").val(row.data("id"));
+                $("#edit-name").val(row.find(".item-name").text().trim());
+                $("#edit-code").val(row.find(".item-code").text().trim());
+                $("#edit-price").val(row.find(".item-price").text().trim());
+                $("#editModal").modal("show");
+            });
+
+            // Update Item
+            $("#edit-item-form").submit(function (event) {
+                event.preventDefault();
+                let id = $("#edit-id").val();
+                $.ajax({
+                    type: 'POST',
+                    url: itemEditUrl.replace('0', id),
+                    data: {
+                        item_name: $("#edit-name").val(),
+                        item_code: $("#edit-code").val(),
+                        price: $("#edit-price").val(),
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error updating item.');
+                        }
+                    }
+                });
+            });
+
+            // Delete Item
+            $(".delete-btn").click(function () {
+                let id = $(this).data("id");
+                if (confirm("Are you sure?")) {
+                    $.ajax({
+                        type: 'POST',
+                        url: "{% url 'item_delete' 0 %}".replace('0', id),
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                        success: function (response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert('Error deleting item.');
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Export to CSV
+            $("#export-csv").click(function () {
+                let csvContent = "data:text/csv;charset=utf-8,ID,Item Name,Item Code,Price\n";
+                $("#item-table tr").each(function () {
+                    let row = [];
+                    $(this).find("td:not(:last-child)").each(function () {
+                        row.push($(this).text().trim());
+                    });
+                    csvContent += row.join(",") + "\n";
+                });
+                let link = document.createElement("a");
+                link.setAttribute("href", encodeURI(csvContent));
+                link.setAttribute("download", "item_list.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

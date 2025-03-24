@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Master</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        @media print {
+            #sales-form, #print-button, .container h2, .container h3, .container h4 {
+                display: none;
+            }
+            #print-area {
+                display: block !important;
+            }
+        }
+        .edit-item {
+            background-color:rgb(204, 184, 0); /* Dim yellow color */
+            color: black;
+            border: none;
+        }
+        .delete-item {
+            background-color: red;
+            color: white;
+            border: none;
+        }
+        .save-item {
+            background-color: green;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Sales Master</h2>
+        <form id="sales-form">
+            <input type="hidden" name="sale_id" id="sale-id">
+            
+            <div class="mb-3">
+                <label for="customer-name">Customer Name:</label>
+                <input type="text" id="customer-name" name="customer_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="customer-number">Number:</label>
+                <input type="text" id="customer-number" name="number" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="invoice-no">Invoice No:</label>
+                <input type="text" name="invoice_no" id="invoice-no" class="form-control" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="invoice-date">Invoice Date:</label>
+                <input type="date" name="invoice_date" id="invoice-date" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="supplier" class="form-label">Supplier:</label>
+                <select id="supplier" name="supplier" class="form-select" required>
+                    <option value="">Select Supplier</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <h3>Sales Details</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-detail-table"></tbody>
+            </table>
+
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <select id="id_item" name="item" class="form-select" required>
+                        <option value="">Select Item</option>
+                        {% for item in items %}
+                            <option value="{{ item.item_name }}">{{ item.item_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="quantity" class="form-control" placeholder="Quantity" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="price" class="form-control" placeholder="Price" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="amount" class="form-control" placeholder="Amount" readonly>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" id="add-item" class="btn btn-success">Add Item</button>
+                </div>
+            </div>
+
+            <div class="mb-3 mt-3">
+                <label for="total-amount">Total Amount:</label>
+                <input type="number" id="total-amount" name="total_amount" step="0.01" class="form-control" readonly>
+            </div>
+
+            <button type="button" id="print-button" class="btn btn-primary">Print Bill</button>
+
+        </form>
+
+        <div id="print-area" style="display: none;">
+            <h2>Sales Master</h2>
+            <p>Customer Name: <span id="print-customer-name"></span></p>
+            <p>Number: <span id="print-customer-number"></span></p>
+            <p>Invoice No: <span id="print-invoice-no"></span></p>
+            <p>Invoice Date: <span id="print-invoice-date"></span></p>
+            <h3>Sales Details</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="print-sales-detail-table"></tbody>
+            </table>
+            <p>Total Amount: <span id="print-total-amount"></span></p>
+        </div>
+
+        <script>
+            $(document).ready(function() {
+                function generateInvoiceNo() {
+                    return 'INV' + new Date().getTime();
+                }
+
+                function setInvoiceDefaults() {
+                    $('#invoice-no').val(generateInvoiceNo());
+                    let today = new Date().toISOString().split('T')[0];
+                    $('#invoice-date').val(today);
+                }
+
+                setInvoiceDefaults();
+
+                function calculateTotal() {
+                    let total = 0;
+                    $("#sales-detail-table tr").each(function() {
+                        let amount = parseFloat($(this).find(".amount").text()) || 0;
+                        total += amount;
+                    });
+                    $("#total-amount").val(total.toFixed(2));
+                }
+
+                $("#quantity, #price").on("input", function() {
+                    let quantity = parseFloat($("#quantity").val()) || 0;
+                    let price = parseFloat($("#price").val()) || 0;
+                    let amount = quantity * price;
+                    $("#amount").val(amount.toFixed(2));
+                });
+
+                $("#add-item").click(function() {
+                    let item_name = $("#id_item option:selected").text();
+                    let quantity = $("#quantity").val();
+                    let price = $("#price").val();
+                    let amount = $("#amount").val();
+
+                    if (item_name === "" || quantity <= 0 || price <= 0 || amount <= 0) {
+                        alert("Please enter valid item details.");
+                        return;
+                    }
+
+                    let newRow = `
+                        <tr>
+                            <td>${item_name}</td>
+                            <td>${quantity}</td>
+                            <td>${price}</td>
+                            <td class="amount">${amount}</td>
+                            <td>
+                                <button class="btn delete-item">Delete</button>
+                                <button class="btn edit-item">Edit</button>
+                            </td>
+                        </tr>
+                    `;
+
+                    $("#sales-detail-table").append(newRow);
+                    $("#quantity, #price, #amount").val("");
+                    calculateTotal();
+                });
+
+                $(document).on("click", ".delete-item", function() {
+                    $(this).closest("tr").remove();
+                    calculateTotal();
+                });
+
+                $(document).on("click", ".edit-item", function() {
+                    let row = $(this).closest("tr");
+                    let item_name = row.find("td:nth-child(1)").text();
+                    let quantity = row.find("td:nth-child(2)").text();
+                    let price = row.find("td:nth-child(3)").text();
+                    let amount = row.find("td:nth-child(4)").text();
+
+                    row.find("td:nth-child(1)").html(`<input type="text" value="${item_name}" class="form-control">`);
+                    row.find("td:nth-child(2)").html(`<input type="number" value="${quantity}" class="form-control">`);
+                    row.find("td:nth-child(3)").html(`<input type="number" value="${price}" class="form-control">`);
+                    row.find("td:nth-child(4)").html(`<input type="number" value="${amount}" class="form-control">`);
+                    row.find(".edit-item").html("Save");
+                    row.find(".edit-item").removeClass("edit-item").addClass("save-item");
+                });
+
+                $(document).on("click", ".save-item", function() {
+                    let row = $(this).closest("tr");
+                    let item_name = row.find("td:nth-child(1) input").val();
+                    let quantity = row.find("td:nth-child(2) input").val();
+                    let price = row.find("td:nth-child(3) input").val();
+                    let amount = row.find("td:nth-child(4) input").val();
+
+                    row.find("td:nth-child(1)").html(item_name);
+                    row.find("td:nth-child(2)").html(quantity);
+                    row.find("td:nth-child(3)").html(price);
+                    row.find("td:nth-child(4)").html(amount);
+                    row.find(".save-item").html("Edit");
+                    row.find(".save-item").removeClass("save-item").addClass("edit-item");
+
+                    calculateTotal();
+                });
+
+                $("#print-button").click(function() {
+                    let customer_name = $("#customer-name").val();
+                    let customer_number = $("#customer-number").val();
+                    let invoice_no = $("#invoice-no").val();
+                    let invoice_date = $("#invoice-date").val();
+                    let total_amount = $("#total-amount").val();
+                    let sales_details = [];
+
+                    $("#sales-detail-table tr").each(function() {
+                        let item_name = $(this).find("td:nth-child(1)").text();
+                        let quantity = $(this).find("td:nth-child(2)").text();
+                        let price = $(this).find("td:nth-child(3)").text();
+                        let amount = $(this).find("td:nth-child(4)").text();
+
+                        sales_details.push({
+                            item_name: item_name,
+                            quantity: quantity,
+                            price: price,
+                            amount: amount
+                        });
+                    });
+
+                    // Send data to the database using AJAX
+                  
+
+                    // Print the invoice
+                    $("#print-customer-name").text(customer_name);
+                    $("#print-customer-number").text(customer_number);
+                    $("#print-invoice-no").text(invoice_no);
+                    $("#print-invoice-date").text(invoice_date);
+                    $("#print-total-amount").text(total_amount);
+
+                    let print_sales_detail_table = "";
+                    $("#sales-detail-table tr").each(function() {
+                        let item_name = $(this).find("td:nth-child(1)").text();
+                        let quantity = $(this).find("td:nth-child(2)").text();
+                        let price = $(this).find("td:nth-child(3)").text();
+                        let amount = $(this).find("td:nth-child(4)").text();
+
+                        print_sales_detail_table += `
+                            <tr>
+                                <td>${item_name}</td>
+                                <td>${quantity}</td>
+                                <td>${price}</td>
+                                <td>${amount}</td>
+                            </tr>
+                        `;
+                    });
+
+                    $("#print-sales-detail-table").html(print_sales_detail_table);
+
+                    $("#print-area").show();
+                    window.print();
+                });
+            });
+        </script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    </div>
+</body>
+</html>

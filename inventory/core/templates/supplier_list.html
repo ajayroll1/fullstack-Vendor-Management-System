@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Master</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Supplier Master</h2>
+        
+        <!-- Add Supplier Form -->
+        <form method="POST" action="{% url 'supplier_create' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Supplier Name:</label>
+                <input type="text" name="supplier_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Mobile No:</label>
+                <input type="text" name="mobile_no" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Address:</label>
+                <textarea name="address" class="form-control" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label>Status:</label>
+                <select name="status" class="form-control">
+                    <option value="True">Active</option>
+                    <option value="False">Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Supplier</button>
+        </form>
+
+        <hr>
+
+        <!-- Filter Form -->
+        <h3>Filter Suppliers</h3>
+        <form method="GET" action="{% url 'supplier_list' %}" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="name" class="form-control" placeholder="Name" value="{{ request.GET.name }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="mobile" class="form-control" placeholder="Mobile No" value="{{ request.GET.mobile }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="address" class="form-control" placeholder="Address" value="{{ request.GET.address }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-control">
+                    <option value="">Status</option>
+                    <option value="True" {% if request.GET.status == 'True' %}selected{% endif %}>Active</option>
+                    <option value="False" {% if request.GET.status == 'False' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-success">Apply Filter</button>
+                <a href="{% url 'supplier_list' %}" class="btn btn-secondary">Clear Filter</a>
+            </div>
+        </form>
+
+        <hr>
+
+        <!-- Supplier List -->
+        <div class="d-flex justify-content-between">
+            <h3>Supplier List</h3>
+            <a href="{% url 'supplier_list' %}?export=csv" class="btn btn-success mb-3">Export to CSV</a>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Mobile No</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.id }}</td>
+                    <td>{{ supplier.supplier_name }}</td>
+                    <td>{{ supplier.mobile_no }}</td>
+                    <td>{{ supplier.address }}</td>
+                    <td>{{ supplier.status|yesno:"Active,Inactive" }}</td>
+                    <td>
+                        <a href="{% url 'supplier_edit' supplier.id %}" class="btn btn-warning btn-sm">Edit</a>
+                        <form method="POST" action="{% url 'supplier_delete' supplier.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this supplier?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Master</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        @media print {
+            #purchase-form, #print-button, .container h2, .container h3, .container h4 {
+                display: none;
+            }
+            #print-area {
+                display: block !important;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+            }
+            .print-table {
+                margin: 20px 0;
+            }
+            .print-table th, .print-table td {
+                padding-right: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Purchase Master</h2>
+        <form id="purchase-form">
+            <div class="mb-3">
+                <label>Invoice No:</label>
+                <input type="text" id="invoice_no" name="invoice_no" class="form-control" readonly>
+            </div>
+            <div class="mb-3">
+                <label>Invoice Date:</label>
+                <input type="date" id="invoice_date" name="invoice_date" class="form-control" readonly>
+            </div>
+            
+        </form>
+
+       
+        <form id="purchase-details-form">
+            <div class="mb-3">
+                <label for="supplier" class="form-label">Supplier:</label>
+                <select id="supplier" name="supplier" class="form-select" required>
+                    <option value="">Select Supplier</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.supplier_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <select id="item" name="item" class="form-select" required>
+                        <option value="">Select Item</option>
+                        {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.item_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="quantity" class="form-control" placeholder="Quantity" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="price" class="form-control" placeholder="Price" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="amount" class="form-control" placeholder="Amount" readonly>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" id="add-item" class="btn btn-success">Add Item</button>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="purchase-details-table"></tbody>
+            </table>
+
+            <div class="mb-3 mt-3">
+                <label for="total-amount">Total Amount:</label>
+                <input type="number" id="total-amount" name="total_amount" step="0.01" class="form-control" readonly>
+            </div>
+
+            <button type="button" id="print-button" class="btn btn-primary">Print Bill</button>
+        </form>
+
+        <div id="print-area" style="display: none;">
+            SPARROWTECH
+            <div>123 Business Street, City, State, Country</div>
+            <div>Phone: +1234567890 | Email: info@sparrowtech.com</div>
+            
+            <div style="margin-top: 20px;">
+                <div>Invoice No: <span id="print-invoice-no"></span></div>
+                <div>Date: <span id="print-invoice-date"></span></div>
+                <div>Supplier: <span id="print-supplier"></span></div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div style="display: flex;">
+                    <div style="margin-right: 15px;">Sr. No</div>
+                    <div style="margin-right: 15px;">Item Name</div>
+                    <div style="margin-right: 15px;">Quantity</div>
+                    <div style="margin-right: 15px;">Price</div>
+                    <div>Amount</div>
+                </div>
+                <div id="print-purchase-details-table"></div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                Total Amount: ₹<span id="print-total-amount"></span>
+            </div>
+
+            <div style="margin-top: 20px;">
+                Thank you for your business!
+            </div>
+            <div>
+                This is a computer generated invoice. No signature required.
+            </div>
+        </div>
+
+        <script>
+            $(document).ready(function() {
+                // Auto-set Invoice Date
+                let today = new Date().toISOString().split('T')[0];
+                $('#invoice_date').val(today);
+
+                // Fetch Latest Invoice Number
+                function fetchInvoiceNumber() {
+                    $.ajax({
+                        url: "{% url 'purchase_master_create' %}",
+                        method: 'GET',
+                        success: function(response) {
+                            if (response.success && response.invoice_no) {
+                                $('#invoice_no').val(response.invoice_no);
+                            } else {
+                                console.log("Error response:", response);
+                                // Generate a temporary invoice number based on timestamp
+                                let timestamp = new Date().getTime();
+                                let tempInvoiceNo = 'INV-' + timestamp;
+                                $('#invoice_no').val(tempInvoiceNo);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.log("AJAX Error:", error);
+                            // Generate a temporary invoice number based on timestamp
+                            let timestamp = new Date().getTime();
+                            let tempInvoiceNo = 'INV-' + timestamp;
+                            $('#invoice_no').val(tempInvoiceNo);
+                        }
+                    });
+                }
+
+                // Call fetchInvoiceNumber immediately
+                fetchInvoiceNumber();
+
+                // Retry if initial fetch fails
+                setTimeout(function() {
+                    if (!$('#invoice_no').val()) {
+                        fetchInvoiceNumber();
+                    }
+                }, 1000);
+
+                function calculateTotal() {
+                    let total = 0;
+                    $("#purchase-details-table tr").each(function() {
+                        let amount = parseFloat($(this).find(".amount").text()) || 0;
+                        total += amount;
+                    });
+                    $("#total-amount").val(total.toFixed(2));
+                }
+
+                $("#quantity, #price").on("input", function() {
+                    let quantity = parseFloat($("#quantity").val()) || 0;
+                    let price = parseFloat($("#price").val()) || 0;
+                    let amount = quantity * price;
+                    $("#amount").val(amount.toFixed(2));
+                });
+
+                $("#add-item").click(function() {
+                    let itemSelect = $("#item");
+                    let item_name = itemSelect.find("option:selected").text();
+                    let quantity = $("#quantity").val();
+                    let price = $("#price").val();
+                    let amount = $("#amount").val();
+
+                    if (!item_name || !quantity || !price || amount <= 0) {
+                        alert("Please enter valid item details.");
+                        return;
+                    }
+
+                    let newRow = `
+                        <tr>
+                            <td>${item_name}</td>
+                            <td>${quantity}</td>
+                            <td>${price}</td>
+                            <td class="amount">${amount}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm delete-item">Delete</button>
+                                <button class="btn btn-primary btn-sm edit-item">Edit</button>
+                            </td>
+                        </tr>
+                    `;
+
+                    $("#purchase-details-table").append(newRow);
+                    $("#item").val(""); // Reset the select
+                    $("#quantity, #price, #amount").val("");
+                    calculateTotal();
+                });
+
+                $(document).on("click", ".delete-item", function() {
+                    $(this).closest("tr").remove();
+                    calculateTotal();
+                });
+
+                $(document).on("click", ".edit-item", function() {
+                    let row = $(this).closest("tr");
+                    let item_name = row.find("td:nth-child(1)").text();
+                    let quantity = row.find("td:nth-child(2)").text();
+                    let price = row.find("td:nth-child(3)").text();
+                    let amount = row.find("td:nth-child(4)").text();
+
+                    // Create select element with all options
+                    let selectHtml = '<select class="form-select">';
+                    selectHtml += '<option value="">Select Item</option>';
+                    {% for item in items %}
+                        selectHtml += `<option value="{{ item.id }}" ${item_name === "{{ item.item_name }}" ? 'selected' : ''}>{{ item.item_name }}</option>`;
+                    {% endfor %}
+                    selectHtml += '</select>';
+
+                    row.find("td:nth-child(1)").html(selectHtml);
+                    row.find("td:nth-child(2)").html(`<input type="number" value="${quantity}" class="form-control">`);
+                    row.find("td:nth-child(3)").html(`<input type="number" value="${price}" class="form-control">`);
+                    row.find("td:nth-child(4)").html(`<input type="number" value="${amount}" class="form-control">`);
+                    row.find(".edit-item").html("Save");
+                    row.find(".edit-item").removeClass("edit-item").addClass("save-item");
+                });
+
+                $(document).on("click", ".save-item", function() {
+                    let row = $(this).closest("tr");
+                    let item_name = row.find("td:nth-child(1) select option:selected").text();
+                    let quantity = row.find("td:nth-child(2) input").val();
+                    let price = row.find("td:nth-child(3) input").val();
+                    let amount = row.find("td:nth-child(4) input").val();
+
+                    if (!item_name || !quantity || !price || amount <= 0) {
+                        alert("Please enter valid item details.");
+                        return;
+                    }
+
+                    row.find("td:nth-child(1)").html(item_name);
+                    row.find("td:nth-child(2)").html(quantity);
+                    row.find("td:nth-child(3)").html(price);
+                    row.find("td:nth-child(4)").html(amount);
+                    row.find(".save-item").html("Edit");
+                    row.find(".save-item").removeClass("save-item").addClass("edit-item");
+
+                    calculateTotal();
+                });
+
+                $("#print-button").click(function() {
+                    let supplier = $("#supplier option:selected").text();
+                    let invoice_no = $("#invoice_no").val();
+                    let invoice_date = $("#invoice_date").val();
+                    let total_amount = $("#total-amount").val();
+
+                    $("#print-supplier").text(supplier);
+                    $("#print-invoice-no").text(invoice_no);
+                    $("#print-invoice-date").text(invoice_date);
+                    $("#print-total-amount").text(total_amount);
+
+                    let print_purchase_details = "";
+                    let sr_no = 1;
+                    $("#purchase-details-table tr").each(function() {
+                        let item_name = $(this).find("td:nth-child(1)").text();
+                        let quantity = $(this).find("td:nth-child(2)").text();
+                        let price = $(this).find("td:nth-child(3)").text();
+                        let amount = $(this).find("td:nth-child(4)").text();
+
+                        print_purchase_details += `
+                            <div style="display: flex; margin-top: 5px;">
+                                <div style="margin-right: 15px;">${sr_no++}</div>
+                                <div style="margin-right: 15px;">${item_name}</div>
+                                <div style="margin-right: 15px;">${quantity}</div>
+                                <div style="margin-right: 15px;">₹${price}</div>
+                                <div>₹${amount}</div>
+                            </div>
+                        `;
+                    });
+
+                    $("#print-purchase-details-table").html(print_purchase_details);
+
+                    $("#print-area").show();
+                    window.print();
+                });
+            });
+        </script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Item</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Edit Item</h2>
+        
+        <form method="POST" action="{% url 'item_edit' item.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Item Name:</label>
+                <input type="text" name="item_name" class="form-control" value="{{ item.item_name }}" required>
+            </div>
+            <div class="mb-3">
+                <label>Brand:</label>
+                <select name="brand" class="form-control" required>
+                    {% for brand in brands %}
+                    <option value="{{ brand.id }}" {% if brand.id == item.brand.id %}selected{% endif %}>
+                        {{ brand.brand_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Status:</label>
+                <select name="status" class="form-control">
+                    <option value="True" {% if item.status %}selected{% endif %}>Active</option>
+                    <option value="False" {% if not item.status %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Item</button>
+            <a href="{% url 'item_list' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</body>
+</html> 

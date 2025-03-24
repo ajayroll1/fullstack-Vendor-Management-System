@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Brand List</h2>
+
+        <!-- Add Brand Form -->
+        <form method="post" action="{% url 'brand_create' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Brand Name:</label>
+                <input type="text" name="brand_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Status:</label>
+                <select name="status" class="form-control">
+                    <option value="True">Active</option>
+                    <option value="False">Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Brand</button>
+        </form>
+
+        <hr>
+
+        <h3>Filter Brands</h3>
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="name" class="form-control" placeholder="Brand Name" value="{{ request.GET.name }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-control">
+                    <option value="">All Status</option>
+                    <option value="True" {% if request.GET.status == "True" %}selected{% endif %}>Active</option>
+                    <option value="False" {% if request.GET.status == "False" %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-success">Apply Filter</button>
+                <a href="{% url 'brand_list' %}" class="btn btn-secondary">Clear Filter</a>
+            </div>
+        </form>
+
+        <hr>
+
+        <div class="d-flex justify-content-between">
+            <h3>Brand List</h3>
+            <a href="{% url 'brand_list' %}?export=csv" class="btn btn-success mb-3">Export to CSV</a>
+        </div>
+
+        <!-- Brands Table -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Brand Name</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for brand in brands %}
+                <tr>
+                    <td>{{ brand.id }}</td>
+                    <td>{{ brand.brand_name }}</td>
+                    <td>{% if brand.status %}Active{% else %}Inactive{% endif %}</td>
+                    <td>
+                        <a href="{% url 'brand_edit' brand.id %}" class="btn btn-warning btn-sm">Edit</a>
+                        <form method="post" action="{% url 'brand_delete' brand.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this brand?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+
