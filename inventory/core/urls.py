@@ -5,14 +5,14 @@ from .views import purchase_master_list, purchase_master_create, purchase_master
 from .views import purchase_details_list, purchase_details_create, purchase_details_edit, purchase_details_delete
 from .views import brand_list, brand_create, brand_edit, brand_delete
 from .views import item_list, item_create, item_edit, item_delete
-from .views import index, report
+from .views import report
 
 urlpatterns = [
-    path('', index, name='index'),
+    path('', item_list, name='index'),
     path("report/", report, name="report"),
     
     # Supplier URLs
-    path('supplier_list', supplier_list, name='supplier_list'),
+    path('supplier_list/', supplier_list, name='supplier_list'),
     path('create/', supplier_create, name='supplier_create'),
     path('edit/<int:id>/', supplier_edit, name='supplier_edit'),
     path('supplier/delete/<int:id>/', supplier_delete, name='supplier_delete'),
@@ -36,7 +36,7 @@ urlpatterns = [
     path('purchase-details/delete/<int:id>/', purchase_details_delete, name='purchase_details_delete'),
     
     # Brand URLs
-    path('brands/brands', brand_list, name='brand_list'),
+    path('brands/brands/', brand_list, name='brand_list'),
     path('brands/create/', brand_create, name='brand_create'),
     path('brands/edit/<int:id>/', brand_edit, name='brand_edit'),
     path('brands/delete/<int:id>/', brand_delete, name='brand_delete'),

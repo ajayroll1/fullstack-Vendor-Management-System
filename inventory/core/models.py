@@ -42,13 +42,7 @@ class SalesMaster(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, editable=False, default=0)  # Auto-calculated
 
     def save(self, *args, **kwargs):
-        self.amount = self.quantity * self.price  # Auto-calculate amount
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.item_name} - {self.quantity} x {self.price}"
-
-    def save(self, *args, **kwargs):
+        # Generate invoice number if not provided
         if not self.invoice_no:  # Only generate if not set
             today = date.today()
             date_str = today.strftime("%Y-%m-%d")
@@ -62,8 +56,20 @@ class SalesMaster(models.Model):
                 new_serial = 1
 
             self.invoice_no = f"{date_str}-{new_serial:02d}"  # Format serial as two digits
+        
+        # Ensure proper data types
+        if isinstance(self.total_amount, str):
+            self.total_amount = float(self.total_amount)
+        if isinstance(self.quantity, str):
+            self.quantity = int(self.quantity)
+        if isinstance(self.price, str):
+            self.price = float(self.price)
+            
+        # Calculate amount if quantity and price are set
+        if self.quantity and self.price:
+            self.amount = self.quantity * self.price
 
-        super().save(*args, **kwargs)  # Call the original save method
+        super(SalesMaster, self).save(*args, **kwargs)  # Call the original save method
 
     def __str__(self):
         return f"{self.customer_name} - {self.invoice_no}"
@@ -86,6 +92,12 @@ class PurchaseMaster(models.Model):
     def __str__(self):
         return f"Invoice {self.invoice_no} - {self.total_amount}"
 
+    def save(self, *args, **kwargs):
+        # Ensure total_amount is properly saved as a float
+        if isinstance(self.total_amount, str):
+            self.total_amount = float(self.total_amount)
+        super(PurchaseMaster, self).save(*args, **kwargs)
+
 
 
 
@@ -101,6 +113,18 @@ class PurchaseDetails(models.Model):
     def __str__(self):
         return f"Item {self.item.item_name} - {self.amount}"
 
+    def save(self, *args, **kwargs):
+        # Ensure amount is calculated properly
+        if isinstance(self.quantity, str):
+            self.quantity = int(self.quantity)
+        if isinstance(self.price, str):
+            self.price = float(self.price)
+        
+        # Calculate amount as quantity * price
+        self.amount = float(self.quantity * self.price)
+        
+        super(PurchaseDetails, self).save(*args, **kwargs)
+
 
 
 
@@ -115,6 +139,36 @@ class BrandMaster(models.Model):
 
     def __str__(self):
         return self.brand_name
+
+
+
+
+
+
+
+class SalesDetails(models.Model):
+    item = models.ForeignKey('Item', on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    price = models.FloatField()
+    amount = models.FloatField()
+    sales_master = models.ForeignKey('SalesMaster', on_delete=models.CASCADE)
+    datetime = models.DateTimeField(auto_now_add=True)
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Item {self.item.item_name} - {self.amount}"
+
+    def save(self, *args, **kwargs):
+        # Ensure amount is calculated properly
+        if isinstance(self.quantity, str):
+            self.quantity = int(self.quantity)
+        if isinstance(self.price, str):
+            self.price = float(self.price)
+        
+        # Calculate amount as quantity * price
+        self.amount = float(self.quantity * self.price)
+        
+        super(SalesDetails, self).save(*args, **kwargs)
 
 
 

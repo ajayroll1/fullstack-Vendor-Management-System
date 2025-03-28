@@ -116,6 +116,12 @@ $(document).ready(function() {
     // Set today's date
     $('#invoice_date').val(new Date().toISOString().split('T')[0]);
 
+    // Generate a random invoice number for preview
+    var today = new Date();
+    var dateStr = today.toISOString().split('T')[0];
+    var randomNum = Math.floor(Math.random() * 100);
+    $('#invoice_no').val(dateStr + '-' + String(randomNum).padStart(2, '0'));
+
     // Calculate amount when quantity or price changes
     $('#quantity, #price').on('input', function() {
         var quantity = parseFloat($('#quantity').val()) || 0;
@@ -189,13 +195,39 @@ $(document).ready(function() {
         $('#amount').val('');
     }
 
-    // Form submission validation
+    // Form submission validation and handling
     $('#purchase-form').submit(function(e) {
         if ($('#purchase-items tr').length === 0) {
             e.preventDefault();
             alert('Please add at least one item');
             return false;
         }
+        
+        // Set a hidden input for the item field to satisfy model requirements
+        if ($('#purchase-items tr').length > 0) {
+            var firstItemId = $('#purchase-items tr:first input[name="items[]"]').val();
+            var hiddenInput = $('<input>').attr({
+                type: 'hidden',
+                name: 'item',
+                value: firstItemId
+            });
+            $(this).append(hiddenInput);
+        }
+        
+        // Double check the supplier is selected
+        if (!$('#supplier').val()) {
+            e.preventDefault();
+            alert('Please select a supplier');
+            return false;
+        }
+        
+        // Ensure invoice date is set
+        if (!$('#invoice_date').val()) {
+            $('#invoice_date').val(new Date().toISOString().split('T')[0]);
+        }
+
+        // Let the form submit normally without AJAX
+        return true;
     });
 });
 </script>

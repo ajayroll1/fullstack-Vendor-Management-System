@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from .models import Supplier, SalesMaster, PurchaseMaster, Item, PurchaseDetails, BrandMaster
+from .models import Supplier, SalesMaster, PurchaseMaster, Item, PurchaseDetails, BrandMaster, SalesDetails
 from .forms import SupplierForm, SalesMasterForm, PurchaseMasterForm, ItemForm, PurchaseDetailsForm, BrandMasterForm
 from datetime import date, datetime
 from django.db.models import Max
@@ -11,15 +11,9 @@ import csv
 from django.db.models import Sum
 
 def report(request):
-    # Get all counts
-    total_suppliers = Supplier.objects.count()
-    total_sales = SalesMaster.objects.count()
-    total_purchase = PurchaseMaster.objects.count()
+    # Get all counts for the statistics cards
     total_items = Item.objects.count()
-    total_brands = BrandMaster.objects.count()
-    
-    # Calculate total stocks from purchase details
-    total_stocks = PurchaseDetails.objects.filter(status=True).aggregate(total=Sum('quantity'))['total'] or 0
+    total_suppliers = Supplier.objects.count()
     
     # Calculate total sales amount
     total_sales_amount = SalesMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
@@ -27,26 +21,115 @@ def report(request):
     # Calculate total purchase amount
     total_purchase_amount = PurchaseMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
     
-    # Calculate remaining stocks
-    remaining_stocks = total_stocks - total_sales_amount
+    # Calculate total stock (total purchase quantities)
+    total_stock = PurchaseDetails.objects.aggregate(total=Sum('quantity'))['total'] or 0
     
-    # Calculate total available (remaining) stocks
-    total_available = total_stocks - total_sales
+    # Get report type and filters
+    report_type = request.GET.get('report_type')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    
+    # Initialize variables
+    sales = []
+    sales_total = 0
+    purchases = []
+    purchases_total = 0
+    items = []
+    total_stock_value = 0
+    
+    # Generate reports based on type
+    if report_type == 'sales':
+        # Get sales data with filters
+        sales_query = SalesMaster.objects.all()
+        
+        if start_date:
+            sales_query = sales_query.filter(invoice_date__gte=start_date)
+        if end_date:
+            sales_query = sales_query.filter(invoice_date__lte=end_date)
+            
+        sales = sales_query.order_by('-invoice_date')
+        sales_total = sales.aggregate(total=Sum('total_amount'))['total'] or 0
+        
+    elif report_type == 'purchases':
+        # Get purchase data with filters
+        purchases_query = PurchaseMaster.objects.all()
+        
+        if start_date:
+            purchases_query = purchases_query.filter(invoice_date__gte=start_date)
+        if end_date:
+            purchases_query = purchases_query.filter(invoice_date__lte=end_date)
+        if status and status in ['True', 'False']:
+            purchases_query = purchases_query.filter(status=(status == 'True'))
+            
+        purchases = purchases_query.order_by('-invoice_date')
+        purchases_total = purchases.aggregate(total=Sum('total_amount'))['total'] or 0
+        
+    elif report_type == 'stock':
+        # Get items data
+        items_query = Item.objects.all()
+        
+        if status and hasattr(Item, 'status'):
+            items_query = items_query.filter(status=status)
+            
+        items = items_query
+        
+        # Calculate stock value for each item
+        for item in items:
+            if hasattr(item, 'stock'):
+                item.stock_value = item.stock * item.price
+                total_stock_value += item.stock_value
+            else:
+                item.stock_value = 0
 
     return render(request, 'report.html', {
+        'total_items': total_items,
         'total_suppliers': total_suppliers,
         'total_sales': total_sales_amount,
-        'total_purchase': total_purchase_amount,
-        'total_items': total_items,
-        'total_brands': total_brands,
-        'total_stocks': total_stocks,
-        'total_sales_quantity': total_sales_amount,
-        'remaining_stocks': remaining_stocks,
-        'total_available': total_available
+        'total_purchases': total_purchase_amount,
+        'total_stock': total_stock,
+        'sales': sales,
+        'sales_total': sales_total,
+        'purchases': purchases,
+        'purchases_total': purchases_total,
+        'items': items,
+        'total_stock_value': total_stock_value
     })
 
 def index(request):
-    return render(request, 'index.html')
+    # Get counts for dashboard stats
+    total_items = Item.objects.filter(status=True).count() if hasattr(Item, 'status') else Item.objects.count()
+    total_suppliers = Supplier.objects.filter(status=True).count()
+    
+    # Get total sales and purchases amount
+    total_sales_amount = SalesMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_purchases_amount = PurchaseMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    # Get recent sales (last 5)
+    recent_sales = SalesMaster.objects.all().order_by('-invoice_date')[:5]
+    
+    # Get recent purchases (last 5)
+    recent_purchases = PurchaseMaster.objects.all().order_by('-invoice_date')[:5]
+    
+    # Get low stock items (items with stock less than 5)
+    # Assuming 'stock' field exists in Item model, otherwise comment this line
+    low_stock_items = []
+    if hasattr(Item, 'stock'):
+        low_stock_items = Item.objects.filter(stock__lt=5)
+        if hasattr(Item, 'status'):
+            low_stock_items = low_stock_items.filter(status=True)
+    
+    context = {
+        'total_items': total_items,
+        'total_suppliers': total_suppliers,
+        'total_sales': f"${total_sales_amount:,.2f}",
+        'total_purchases': f"${total_purchases_amount:,.2f}",
+        'recent_sales': recent_sales,
+        'recent_purchases': recent_purchases,
+        'low_stock_items': low_stock_items,
+    }
+    
+    return render(request, 'index.html', context)
 
 def supplier_list(request):
     suppliers = Supplier.objects.all()
@@ -170,18 +253,62 @@ def generate_invoice_number(prefix):
 
 def sales_master_create(request):
     if request.method == 'POST':
-        invoice_no = generate_invoice_number('SALE')
-        invoice_date = request.POST.get('invoice_date')
-        total_amount = request.POST.get('total_amount')
-        
-        SalesMaster.objects.create(
-            invoice_no=invoice_no,
-            invoice_date=invoice_date,
-            total_amount=total_amount
-        )
-        messages.success(request, 'Sales record created successfully!')
-        return redirect('sales_master_list')
-    return render(request, 'sales_master_create.html')
+        try:
+            # Generate invoice number using existing function
+            invoice_no = generate_invoice_number('SALE')
+            
+            # Get form data
+            invoice_date = request.POST.get('invoice_date')
+            total_amount = request.POST.get('total_amount')
+            customer_name = request.POST.get('customer_name')
+            number = request.POST.get('number')
+            item_id = request.POST.get('item')
+            
+            if not all([invoice_date, total_amount, customer_name, item_id]):
+                messages.error(request, 'Please fill all required fields')
+                return redirect('sales_master_list')  # Redirect back to list page instead
+            
+            # Get the selected item
+            item = get_object_or_404(Item, id=item_id)
+            
+            # Create SalesMaster record
+            sales_master = SalesMaster.objects.create(
+                invoice_no=invoice_no,
+                invoice_date=invoice_date,
+                total_amount=float(total_amount),
+                customer_name=customer_name,
+                number=number if number else "",  # Make number optional
+                item=item
+            )
+            
+            # Process individual items
+            items = request.POST.getlist('items[]')
+            quantities = request.POST.getlist('quantities[]')
+            prices = request.POST.getlist('prices[]')
+            amounts = request.POST.getlist('amounts[]')
+            
+            # Create SalesDetails records for multiple items
+            for i in range(len(items)):
+                if items[i]:  # Only create if item is selected
+                    detail_item = get_object_or_404(Item, id=items[i])
+                    SalesDetails.objects.create(
+                        item=detail_item,
+                        quantity=quantities[i],
+                        price=prices[i],
+                        amount=amounts[i],
+                        sales_master=sales_master
+                    )
+            
+            messages.success(request, 'Sales record created successfully!')
+            return redirect('sales_master_list')  # Always redirect to the list page
+        except Exception as e:
+            messages.error(request, f'Error creating sales record: {str(e)}')
+            return redirect('sales_master_list')  # Redirect back to list page on error
+    
+    # This part won't be reached from the "Save Sale" button on the list page,
+    # but keeps compatibility with any direct access to this URL
+    items = Item.objects.all()
+    return render(request, 'sales_master_create.html', {'items': items})
 
 def sales_master_edit(request, id):
     sales = get_object_or_404(SalesMaster, id=id)
@@ -243,17 +370,24 @@ def purchase_master_create(request):
                 new_serial = 1
             invoice_no = f"{date_str}-{new_serial:02d}"
             
+            # Get form data
             supplier_id = request.POST.get('supplier')
             total_amount = request.POST.get('total_amount')
+            item_id = request.POST.get('item') if 'item' in request.POST else None
+            invoice_date = request.POST.get('invoice_date') or today
             
             if supplier_id and total_amount:
                 supplier = get_object_or_404(Supplier, id=supplier_id)
+                # Get a default item if none specified
+                item = get_object_or_404(Item, id=item_id) if item_id else Item.objects.first()
+                
                 # Create PurchaseMaster record
                 purchase_master = PurchaseMaster.objects.create(
                     invoice_no=invoice_no,
-                    invoice_date=today,
+                    invoice_date=invoice_date,
                     supplier=supplier,
-                    total_amount=total_amount
+                    total_amount=float(total_amount),
+                    item=item
                 )
                 
                 # Handle purchase details
@@ -262,6 +396,7 @@ def purchase_master_create(request):
                 prices = request.POST.getlist('prices[]')
                 amounts = request.POST.getlist('amounts[]')
                 
+                # Create purchase details records
                 for i in range(len(items)):
                     if items[i]:  # Only create if item is selected
                         item = get_object_or_404(Item, id=items[i])
@@ -494,11 +629,10 @@ def item_edit(request, id):
 
 # Delete an item
 def item_delete(request, id):
-    if request.method == "POST":
-        try:
-            item = get_object_or_404(Item, id=id)
-            item.delete()
-            messages.success(request, 'Item deleted successfully.')
-        except Exception as e:
-            messages.error(request, f'Error deleting item: {str(e)}')
+    try:
+        item = get_object_or_404(Item, id=id)
+        item.delete()
+        messages.success(request, 'Item deleted successfully.')
+    except Exception as e:
+        messages.error(request, f'Error deleting item: {str(e)}')
     return redirect('item_list')
