@@ -122,8 +122,8 @@ def index(request):
     context = {
         'total_items': total_items,
         'total_suppliers': total_suppliers,
-        'total_sales': f"${total_sales_amount:,.2f}",
-        'total_purchases': f"${total_purchases_amount:,.2f}",
+        'total_sales': f"₹{total_sales_amount:,.2f}",
+        'total_purchases': f"₹{total_purchases_amount:,.2f}",
         'recent_sales': recent_sales,
         'recent_purchases': recent_purchases,
         'low_stock_items': low_stock_items,

@@ -150,6 +150,8 @@
                                         <th>ID</th>
                                         <th>Item Name</th>
                                         <th>Item Code</th>
+                                        <th>Category</th>
+                                        <th>Stock</th>
                                         <th>Price</th>
                                         <th>Action</th>
                                     </tr>
@@ -160,7 +162,9 @@
                                         <td>{{ item.id }}</td>
                                         <td>{{ item.item_name }}</td>
                                         <td>{{ item.item_code }}</td>
-                                        <td>${{ item.price }}</td>
+                                        <td>{{ item.category.category_name|default:"N/A" }}</td>
+                                        <td>{{ item.stock }}</td>
+                                        <td>₹{{ item.price }}</td>
                                         <td>
                                             <a href="{% url 'item_edit' item.id %}" class="btn btn-warning btn-sm">
                                                 <i class="bi bi-pencil"></i> Edit

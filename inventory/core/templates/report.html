@@ -69,7 +69,7 @@
                         <div class="card bg-primary text-white h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div style="width: 65%;">
                                         <h5 class="mb-0">Total Items</h5>
                                         <h2 class="mt-2 mb-0">{{ total_items }}</h2>
                                     </div>
@@ -82,7 +82,7 @@
                         <div class="card bg-info text-white h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div style="width: 65%;">
                                         <h5 class="mb-0">Total Stock</h5>
                                         <h2 class="mt-2 mb-0">{{ total_stock }}</h2>
                                     </div>
@@ -95,7 +95,7 @@
                         <div class="card bg-success text-white h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div style="width: 65%;">
                                         <h5 class="mb-0">Total Suppliers</h5>
                                         <h2 class="mt-2 mb-0">{{ total_suppliers }}</h2>
                                     </div>
@@ -108,9 +108,9 @@
                         <div class="card bg-warning text-white h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div style="width: 65%;">
                                         <h5 class="mb-0">Total Sales</h5>
-                                        <h2 class="mt-2 mb-0">{{ total_sales }}</h2>
+                                        <h2 class="mt-2 mb-0">₹{{ total_sales }}</h2>
                                     </div>
                                     <i class="bi bi-cart-check fs-1"></i>
                                 </div>
@@ -121,9 +121,9 @@
                         <div class="card bg-danger text-white h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
+                                    <div style="width: 65%;">
                                         <h5 class="mb-0">Total Purchases</h5>
-                                        <h2 class="mt-2 mb-0">{{ total_purchases }}</h2>
+                                        <h2 class="mt-2 mb-0">₹{{ total_purchases }}</h2>
                                     </div>
                                     <i class="bi bi-bag-plus fs-1"></i>
                                 </div>
@@ -214,8 +214,8 @@
                                         <td>{{ sale.date|date:"Y-m-d" }}</td>
                                         <td>{{ sale.item.item_name }}</td>
                                         <td>{{ sale.quantity }}</td>
-                                        <td>${{ sale.price }}</td>
-                                        <td>${{ sale.total }}</td>
+                                        <td>₹{{ sale.price }}</td>
+                                        <td>₹{{ sale.total }}</td>
                                         <td>{{ sale.customer|default:"N/A" }}</td>
                                     </tr>
                                     {% empty %}
@@ -228,7 +228,7 @@
                                     <tr class="table-primary">
                                         <th colspan="4">Total</th>
                                         <th></th>
-                                        <th>${{ sales_total }}</th>
+                                        <th>₹{{ sales_total }}</th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
@@ -255,8 +255,8 @@
                                         <td>{{ purchase.item.item_name }}</td>
                                         <td>{{ purchase.supplier.supplier_name }}</td>
                                         <td>{{ purchase.quantity }}</td>
-                                        <td>${{ purchase.price }}</td>
-                                        <td>${{ purchase.total }}</td>
+                                        <td>₹{{ purchase.price }}</td>
+                                        <td>₹{{ purchase.total }}</td>
                                     </tr>
                                     {% empty %}
                                     <tr>
@@ -268,7 +268,7 @@
                                     <tr class="table-primary">
                                         <th colspan="5">Total</th>
                                         <th></th>
-                                        <th>${{ purchases_total }}</th>
+                                        <th>₹{{ purchases_total }}</th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -297,8 +297,8 @@
                                                 {{ item.stock }}
                                             </span>
                                         </td>
-                                        <td>${{ item.price }}</td>
-                                        <td>${{ item.stock_value }}</td>
+                                        <td>₹{{ item.price }}</td>
+                                        <td>₹{{ item.stock_value }}</td>
                                         <td>
                                             <span class="badge bg-{% if item.status %}success{% else %}danger{% endif %}">
                                                 {{ item.status|yesno:"Active,Inactive" }}
@@ -314,7 +314,7 @@
                                 <tfoot>
                                     <tr class="table-primary">
                                         <th colspan="5">Total Stock Value</th>
-                                        <th>${{ total_stock_value }}</th>
+                                        <th>₹{{ total_stock_value }}</th>
                                         <th></th>
                                     </tr>
                                 </tfoot>

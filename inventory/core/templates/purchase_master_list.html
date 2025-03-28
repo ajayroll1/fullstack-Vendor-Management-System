@@ -233,9 +233,9 @@
                                     <tr>
                                         <td>{{ purchase.id }}</td>
                                         <td>{{ purchase.invoice_no }}</td>
-                                        <td>{{ purchase.invoice_date }}</td>
+                                        <td>{{ purchase.invoice_date|date:"Y-m-d" }}</td>
                                         <td>{{ purchase.supplier.supplier_name }}</td>
-                                        <td>${{ purchase.total_amount }}</td>
+                                        <td>₹{{ purchase.total_amount }}</td>
                                         <td>
                                             <span class="badge bg-{% if purchase.status %}success{% else %}danger{% endif %}">
                                                 {{ purchase.status|yesno:"Active,Inactive" }}
@@ -352,11 +352,11 @@
                     </td>
                     <td>
                         <input type="hidden" name="prices[]" value="${price}">
-                        ${price}
+                        ₹${price}
                     </td>
                     <td>
                         <input type="hidden" name="amounts[]" value="${amount}">
-                        ${amount}
+                        ₹${amount}
                     </td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remove-item">

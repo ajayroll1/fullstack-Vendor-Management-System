@@ -220,9 +220,9 @@
                                     <tr>
                                         <td>{{ sale.id }}</td>
                                         <td>{{ sale.invoice_no }}</td>
-                                        <td>{{ sale.invoice_date }}</td>
+                                        <td>{{ sale.invoice_date|date:"Y-m-d" }}</td>
                                         <td>{{ sale.customer_name }}</td>
-                                        <td>${{ sale.total_amount }}</td>
+                                        <td>₹{{ sale.total_amount }}</td>
                                         <td>
                                             <a href="{% url 'sales_master_edit' sale.id %}" class="btn btn-warning btn-sm">
                                                 <i class="bi bi-pencil"></i> Edit
@@ -334,11 +334,11 @@
                     </td>
                     <td>
                         <input type="hidden" name="prices[]" value="${price}">
-                        ${price}
+                        ₹${price}
                     </td>
                     <td>
                         <input type="hidden" name="amounts[]" value="${amount}">
-                        ${amount}
+                        ₹${amount}
                     </td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remove-item">
