@@ -5,10 +5,10 @@ from .views import purchase_master_list, purchase_master_create, purchase_master
 from .views import purchase_details_list, purchase_details_create, purchase_details_edit, purchase_details_delete
 from .views import brand_list, brand_create, brand_edit, brand_delete
 from .views import item_list, item_create, item_edit, item_delete
-from .views import report
+from .views import report, index
 
 urlpatterns = [
-    path('', item_list, name='index'),
+    path('', index, name='index'),
     path("report/", report, name="report"),
     
     # Supplier URLs

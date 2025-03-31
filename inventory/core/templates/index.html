@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Inventory Management System{% endblock %}
+
+{% block additional_styles %}
+.stats-card {
+    transition: transform 0.3s;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+.welcome-header {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 1.5rem;
+}
+.welcome-text {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+.hero-section {
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+.action-btn {
+    padding: 0.7rem 1.5rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+}
+{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1 class="welcome-header">Welcome to Inventory Management System</h1>
+    <p class="welcome-text">Track your inventory, manage suppliers, monitor sales and purchases all in one place.</p>
+    <div class="mb-4">
+        <a href="{% url 'item_list' %}" class="btn btn-primary action-btn me-2">
+            <i class="bi bi-box-seam me-2"></i>Manage Items
+        </a>
+        <a href="{% url 'report' %}" class="btn btn-success action-btn">
+            <i class="bi bi-bar-chart-line me-2"></i>View Reports
+        </a>
+    </div>
+</div>
+
+<!-- Quick Stats Section -->
+<h3 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard Overview</h3>
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <h5 class="mb-0">Total Items</h5>
+                        <h2 class="mt-2 mb-0">{{ total_items }}</h2>
+                    </div>
+                    <div class="ms-3 me-2">
+                        <i class="bi bi-box-seam fs-1"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'item_list' %}" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right-circle"></i> View All Items
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <h5 class="mb-0">Total Sales</h5>
+                        <h2 class="mt-2 mb-0">₹{{ total_sales }}</h2>
+                    </div>
+                    <div class="ms-3 me-2">
+                        <i class="bi bi-cart-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'sales_master_list' %}" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right-circle"></i> View All Sales
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <h5 class="mb-0">Total Purchases</h5>
+                        <h2 class="mt-2 mb-0">₹{{ total_purchases }}</h2>
+                    </div>
+                    <div class="ms-3 me-2">
+                        <i class="bi bi-bag-plus fs-1"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'purchase_master_list' %}" class="text-white text-decoration-none">
+                    <i class="bi bi-arrow-right-circle"></i> View All Purchases
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Section -->
+{% comment %} <h3 class="mb-4"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h3>
+<div class="row">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam text-primary" style="font-size: 3rem;"></i>
+                <h5 class="mt-3">Add New Item</h5>
+                <p>Add new items to your inventory database</p>
+                <a href="{% url 'item_create' %}" class="btn btn-outline-primary">Add Item</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-people text-success" style="font-size: 3rem;"></i>
+                <h5 class="mt-3">Add Supplier</h5>
+                <p>Register new suppliers in the system</p>
+                <a href="{% url 'supplier_create' %}" class="btn btn-outline-success">Add Supplier</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-cart-plus text-warning" style="font-size: 3rem;"></i>
+                <h5 class="mt-3">New Purchase</h5>
+                <p>Record a new purchase transaction</p>
+                <a href="{% url 'purchase_master_create' %}" class="btn btn-outline-warning">Create Purchase</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-cart-check text-danger" style="font-size: 3rem;"></i>
+                <h5 class="mt-3">New Sale</h5>
+                <p>Record a new sales transaction</p>
+                <a href="{% url 'sales_master_create' %}" class="btn btn-outline-danger">Create Sale</a>
+            </div>
+        </div>
+    </div>
+</div> {% endcomment %}
+{% endblock %} 

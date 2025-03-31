@@ -10,6 +10,28 @@ from django.db.models import Max
 import csv
 from django.db.models import Sum
 
+def index(request):
+    # Get all counts for the statistics cards
+    total_items = Item.objects.count()
+    total_suppliers = Supplier.objects.count()
+    
+    # Calculate total sales amount
+    total_sales_amount = SalesMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    # Calculate total purchase amount
+    total_purchase_amount = PurchaseMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    # Calculate total stock (total purchase quantities)
+    total_stock = PurchaseDetails.objects.aggregate(total=Sum('quantity'))['total'] or 0
+    
+    return render(request, 'index.html', {
+        'total_items': total_items,
+        'total_suppliers': total_suppliers,
+        'total_sales': total_sales_amount,
+        'total_purchases': total_purchase_amount,
+        'total_stock': total_stock
+    })
+
 def report(request):
     # Get all counts for the statistics cards
     total_items = Item.objects.count()
@@ -95,41 +117,6 @@ def report(request):
         'items': items,
         'total_stock_value': total_stock_value
     })
-
-def index(request):
-    # Get counts for dashboard stats
-    total_items = Item.objects.filter(status=True).count() if hasattr(Item, 'status') else Item.objects.count()
-    total_suppliers = Supplier.objects.filter(status=True).count()
-    
-    # Get total sales and purchases amount
-    total_sales_amount = SalesMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
-    total_purchases_amount = PurchaseMaster.objects.aggregate(total=Sum('total_amount'))['total'] or 0
-    
-    # Get recent sales (last 5)
-    recent_sales = SalesMaster.objects.all().order_by('-invoice_date')[:5]
-    
-    # Get recent purchases (last 5)
-    recent_purchases = PurchaseMaster.objects.all().order_by('-invoice_date')[:5]
-    
-    # Get low stock items (items with stock less than 5)
-    # Assuming 'stock' field exists in Item model, otherwise comment this line
-    low_stock_items = []
-    if hasattr(Item, 'stock'):
-        low_stock_items = Item.objects.filter(stock__lt=5)
-        if hasattr(Item, 'status'):
-            low_stock_items = low_stock_items.filter(status=True)
-    
-    context = {
-        'total_items': total_items,
-        'total_suppliers': total_suppliers,
-        'total_sales': f"₹{total_sales_amount:,.2f}",
-        'total_purchases': f"₹{total_purchases_amount:,.2f}",
-        'recent_sales': recent_sales,
-        'recent_purchases': recent_purchases,
-        'low_stock_items': low_stock_items,
-    }
-    
-    return render(request, 'index.html', context)
 
 def supplier_list(request):
     suppliers = Supplier.objects.all()
