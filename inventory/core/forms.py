@@ -6,9 +6,6 @@ from .models import PurchaseDetails
 from .models import Item
 from .models import BrandMaster
 
-
-
-
 class SupplierForm(forms.ModelForm):
     class Meta:
         model = Supplier

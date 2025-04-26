@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from datetime import date
 
@@ -102,7 +103,7 @@ class PurchaseMaster(models.Model):
 
 
 class PurchaseDetails(models.Model):
-    item = models.ForeignKey('Item', on_delete=models.CASCADE)  # Changed from item_id to item
+    item = models.ForeignKey('Item', on_delete=models.CASCADE, default=17)  # Set default=17 to match existing item
     quantity = models.IntegerField()
     price = models.FloatField()
     amount = models.FloatField()
